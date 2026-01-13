@@ -11,7 +11,7 @@ import urllib.request
 from datetime import datetime
 
 __VERSION__ = "1.0.0"
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/ТВОЙ_USER/termux-bt-scanner/main/bt_scanner.py"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/zhelukq/blue/main/blue.py"
 SCRIPT_PATH = os.path.abspath(__file__)
 
 
@@ -47,16 +47,16 @@ def scan_bluetooth():
 
 def print_devices(devices):
     clear_screen()
-    print("=" * 60)
+    print("=" * 50)
     print(f"🔍 Bluetooth Scanner v{__VERSION__} [{datetime.now().strftime('%H:%M:%S')}]")
-    print("=" * 60)
+    print("=" * 50)
     if not devices:
         print("📱 Нет устройств. Проверь BT!")
     else:
         print(f"📡 Найдено: {len(devices)} устройств")
         for i, (mac, name) in enumerate(devices, 1):
             print(f"[{i:2d}] {mac} → {name}")
-    print("=" * 60)
+    print("=" * 50)
     print("[0] Обновить | [u] Обновить скрипт | [q] Выход")
     print()
 
