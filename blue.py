@@ -10,7 +10,7 @@ import os
 import urllib.request
 from datetime import datetime
 
-__VERSION__ = "1.0.1"
+__VERSION__ = "1.0.2"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/zhelukq/blue/main/blue.py"
 SCRIPT_PATH = os.path.abspath(__file__)
 
@@ -62,22 +62,39 @@ def print_devices(devices):
 
 
 def check_for_update():
-    """Проверка и автообновление скрипта с GitHub"""
+    """Проверка и автообновление скрипта с GitHub через curl (надёжно в Termux)"""
     try:
         print("🔄 Проверка обновлений с GitHub...")
-        with urllib.request.urlopen(GITHUB_RAW_URL, timeout=5) as resp:
-            remote_code = resp.read().decode('utf-8')
 
-        # Очень простая проверка: ищем строку __VERSION__
+        import tempfile
+
+        # Временный файл для загрузки
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp_path = tmp.name
+
+        # Качаем через curl
+        curl_cmd = ["curl", "-L", "-s", GITHUB_RAW_URL, "-o", tmp_path]
+        res = subprocess.run(curl_cmd)
+
+        if res.returncode != 0:
+            print("❌ curl не смог скачать файл (проверь URL/интернет)")
+            time.sleep(2)
+            return
+
+        # Читаем скачанный код
+        with open(tmp_path, "r", encoding="utf-8") as f:
+            remote_code = f.read()
+
+        # Ищем __VERSION__ в удалённом файле
         remote_version = None
         for line in remote_code.splitlines():
             if line.strip().startswith("__VERSION__"):
-                # __VERSION__ = "1.0.1"
-                remote_version = line.split('=')[1].strip().strip('"\'')
+                remote_version = line.split("=", 1)[1].strip().strip("\"'")
                 break
 
         if not remote_version:
             print("❌ Не удалось определить версию на GitHub")
+            time.sleep(2)
             return
 
         if remote_version == __VERSION__:
@@ -86,9 +103,9 @@ def check_for_update():
             return
 
         print(f"⬆️ Найдена новая версия: {remote_version} (у тебя {__VERSION__})")
-        print("💾 Скачиваю обновление...")
+        print("💾 Обновляю скрипт...")
 
-        # Бэкап старого файла
+        # Бэкап
         backup_path = SCRIPT_PATH + ".bak"
         try:
             if os.path.exists(SCRIPT_PATH):
@@ -97,7 +114,7 @@ def check_for_update():
             print(f"⚠️ Не удалось сделать бэкап: {e}")
 
         # Записываем новый код
-        with open(SCRIPT_PATH, 'w', encoding='utf-8') as f:
+        with open(SCRIPT_PATH, "w", encoding="utf-8") as f:
             f.write(remote_code)
 
         print("✅ Обновление завершено, перезапуск...")
@@ -107,6 +124,7 @@ def check_for_update():
     except Exception as e:
         print(f"❌ Ошибка обновления: {e}")
         time.sleep(2)
+
 
 
 def main():
