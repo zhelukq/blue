@@ -10,7 +10,7 @@ import subprocess
 import os
 from datetime import datetime
 
-__VERSION__ = "2.0.4"
+__VERSION__ = "2.0.6"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/zhelukq/blue/main/blue.py"
 SCRIPT_PATH = os.path.abspath(__file__)
 
