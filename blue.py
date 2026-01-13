@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
 Bluetooth сканер для Termux/Android с автообновлением из GitHub
+(использует termux-bt scan вместо bluetoothctl)
 """
 
 import sys
 import time
 import subprocess
 import os
-import urllib.request
 from datetime import datetime
 
-__VERSION__ = "2.0.3"
+__VERSION__ = "2.0.4"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/zhelukq/blue/main/blue.py"
 SCRIPT_PATH = os.path.abspath(__file__)
 
@@ -20,30 +20,46 @@ def clear_screen():
 
 
 def scan_bluetooth():
+    """
+    Сканирование через termux-bt scan (нужен Termux:API и pkg install termux-api).
+    Формат вывода смотри через: termux-bt scan
+    """
+    devices = []
     try:
-        subprocess.run(['bluetoothctl', 'scan', 'on'],
-                       capture_output=True, text=True, timeout=1)
-        time.sleep(8)
-        result = subprocess.run(['bluetoothctl', 'devices'],
-                                capture_output=True, text=True, timeout=3)
+        # termux-bt scan может немного висеть, дадим ему до 15 секунд
+        result = subprocess.run(
+            ["termux-bt", "scan"],
+            capture_output=True, text=True, timeout=15
+        )
 
-        subprocess.run(['bluetoothctl', 'scan', 'off'],
-                       capture_output=True, text=True, timeout=1)
+        if result.returncode != 0:
+            print(f"Ошибка termux-bt scan (код {result.returncode}):\n{result.stderr}")
+            time.sleep(2)
+            return devices
 
-        devices = []
-        if result.returncode == 0:
-            for line in result.stdout.strip().split('\n'):
-                if line.startswith('Device '):
-                    parts = line.split()
-                    if len(parts) >= 3:
-                        mac = parts[1]
-                        name = ' '.join(parts[2:])
-                        devices.append((mac, name))
+        # Примерный формат строк (см. у себя через termux-bt scan):
+        # AA:BB:CC:DD:EE:FF SomeDeviceName
+        # 11:22:33:44:55:66 JBL Flip 6
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) >= 1:
+                mac = parts[0]
+                name = " ".join(parts[1:]) if len(parts) > 1 else "Unknown"
+                devices.append((mac, name))
+
+        return devices
+
+    except subprocess.TimeoutExpired:
+        print("Ошибка сканирования: termux-bt scan timeout")
+        time.sleep(2)
         return devices
     except Exception as e:
         print(f"Ошибка сканирования: {e}")
-        time.sleep(3000)
-        return []
+        time.sleep(2)
+        return devices
 
 
 def print_devices(devices):
@@ -52,7 +68,7 @@ def print_devices(devices):
     print(f"🔍 Bluetooth Scanner v{__VERSION__} [{datetime.now().strftime('%H:%M:%S')}]")
     print("=" * 50)
     if not devices:
-        print("📱 Нет устройств. Проверь BT!")
+        print("📱 Нет устройств. Проверь BT / права Termux:API!")
     else:
         print(f"📡 Найдено: {len(devices)} устройств")
         for i, (mac, name) in enumerate(devices, 1):
@@ -127,10 +143,9 @@ def check_for_update():
         time.sleep(2)
 
 
-
 def main():
     print(f"🚀 Запуск Bluetooth Scanner v{__VERSION__}")
-    print("Установи: pkg install bluez && bluetoothctl power on")
+    print("Нужно: Termux:API + pkg install termux-api, BT включен, права выданы.")
     # авто‑проверка при старте
     check_for_update()
 
@@ -154,7 +169,7 @@ def main():
                     if 0 <= idx < len(devices):
                         mac, name = devices[idx]
                         print(f"\n📱 Выбрано: {mac} ({name})")
-                        print("Пример: bluetoothctl info", mac)
+                        print("Дальше можно руками дернуть: termux-bt info (если появится в API)")
                         input("\nНажми Enter для возврата...")
                 except ValueError:
                     print("❌ Введи 0, номер, u или q")
