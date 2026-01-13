@@ -10,7 +10,7 @@ import os
 import urllib.request
 from datetime import datetime
 
-__VERSION__ = "1.0.0"
+__VERSION__ = "1.0.1"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/zhelukq/blue/main/blue.py"
 SCRIPT_PATH = os.path.abspath(__file__)
 
